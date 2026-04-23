@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Daryl — Applied AI Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #070a10;
+    --bg-1: #0b0f17;
+    --bg-2: #10161f;
+    --bg-3: #141b26;
+    --line: rgba(255,255,255,0.06);
+    --line-strong: rgba(255,255,255,0.12);
+    --fg-0: #e7ecf3;
+    --fg-1: #a8b1bf;
+    --fg-2: #6b7280;
+    --fg-3: #434a55;
+    --accent: #10b981;
+    --accent-2: #3b82f6;
+    --warn: #f59e0b;
+    --glow: 0 0 40px rgba(16,185,129,0.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-0); color: var(--fg-0); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11','ss01','ss03'; }
+  body { overflow-x: hidden; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; }
+  .bg-noise::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      radial-gradient(1200px 700px at 85% -10%, rgba(59,130,246,0.08), transparent 60%),
+      radial-gradient(900px 600px at -10% 40%, rgba(16,185,129,0.07), transparent 60%);
+  }
+  .bg-grid::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 40%, transparent 85%);
+  }
+  ::selection { background: rgba(16,185,129,0.3); color: #fff; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+  .glass {
+    background: linear-gradient(180deg, rgba(20,27,38,0.7), rgba(11,15,23,0.6));
+    border: 1px solid var(--line);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .glass-strong {
+    background: linear-gradient(180deg, rgba(20,27,38,0.85), rgba(11,15,23,0.8));
+    border: 1px solid var(--line-strong);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+  }
+  button, a { outline: none; }
+  button:focus-visible, a:focus-visible { box-shadow: 0 0 0 2px var(--accent); border-radius: 8px; }
+  @keyframes pulseDot { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .55; transform: scale(.85);} }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px);} to { opacity: 1; transform: translateY(0);} }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body class="bg-noise bg-grid">
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+  <script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ───── Primitives ───── */
+const Icon = ({ name, size = 16, strokeWidth = 1.6 }) => {
+  const paths = {
+    arrow: <><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></>,
+    arrowUpRight: <><path d="M7 17L17 7"/><path d="M8 7h9v9"/></>,
+    github: <><path d="M9 19c-4 1.5-4-2-6-2"/><path d="M15 22v-4a3 3 0 0 0-1-2.3c3-.3 6-1.5 6-6.5a5 5 0 0 0-1.4-3.5 4.6 4.6 0 0 0-.1-3.4s-1.1-.3-3.5 1.3a12 12 0 0 0-6 0C6.6 0 5.5.3 5.5.3a4.6 4.6 0 0 0-.1 3.4A5 5 0 0 0 4 7.2c0 5 3 6.2 6 6.5a3 3 0 0 0-1 2.3V22"/></>,
+    linkedin: <><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10v8M8 7v.01M12 18v-5a2 2 0 0 1 4 0v5M12 13v5"/></>,
+    download: <><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></>,
+    home: <><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></>,
+    work: <><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
+    cpu: <><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></>,
+    activity: <><path d="M3 12h4l3-9 4 18 3-9h4"/></>,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></>,
+    pulse: <><path d="M2 12h4l2-7 4 14 2-7h8"/></>,
+    cloud: <><path d="M7 18a5 5 0 0 1 0-10 6 6 0 0 1 11 2 4 4 0 0 1 1 8H7z"/></>,
+    code: <><path d="M8 6l-6 6 6 6"/><path d="M16 6l6 6-6 6"/><path d="M14 4l-4 16"/></>,
+    stack: <><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/></>,
+    zap: <><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></>,
+    download: <><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {paths[name]}
+    </svg>
+  );
+};
+
+const StatusDot = ({ color = '#10b981', size = 6 }) => (
+  <span style={{ position: 'relative', display: 'inline-block', width: size, height: size }}>
+    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}` }}/>
+    <span style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: color, opacity: 0.25, animation: 'pulseDot 2s ease-in-out infinite' }}/>
+  </span>
+);
+
+const Section = ({ id, label, title, eyebrow, kicker, children, accent = '#10b981' }) => (
+  <section id={id} style={{ position: 'relative', padding: '120px 40px', maxWidth: 1280, margin: '0 auto' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: accent, boxShadow: `0 0 12px ${accent}` }}/>
+      <span className="mono" style={{ fontSize: 11.5, color: 'var(--fg-2)', letterSpacing: 1.2, textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ flex: 1, height: 1, background: 'linear-gradient(to right, rgba(255,255,255,0.08), transparent)' }}/>
+      {kicker && <span className="mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>{kicker}</span>}
+    </div>
+    {eyebrow && <div className="mono" style={{ color: 'var(--fg-2)', fontSize: 12, marginBottom: 6 }}>{eyebrow}</div>}
+    {title && <h2 style={{ fontSize: 42, fontWeight: 600, letterSpacing: -1.2, lineHeight: 1.05, margin: '0 0 48px', color: 'var(--fg-0)', maxWidth: 720 }}>{title}</h2>}
+    {children}
+  </section>
+);
+
+/* ───── Particle Field ───── */
+const ParticleField = ({ accent = '#10b981' }) => {
+  const canvasRef = useRef(null);
+  const mouseRef = useRef({ x: -1000, y: -1000, active: false });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, raf = 0, nodes = [];
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const hexToRgba = (hex, a) => { const h = hex.replace('#',''); return `rgba(${parseInt(h.substring(0,2),16)},${parseInt(h.substring(2,4),16)},${parseInt(h.substring(4,6),16)},${a})`; };
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect(); W = rect.width; H = rect.height;
+      canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      nodes = Array.from({ length: Math.floor((W * H) / 16000) }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25, r: Math.random() * 1.2 + 0.4 }));
+    };
+    const onMove = (e) => { const rect = canvas.getBoundingClientRect(); mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top, active: true }; };
+    const onLeave = () => { mouseRef.current.active = false; };
+    const tick = () => {
+      ctx.clearRect(0, 0, W, H); const m = mouseRef.current;
+      if (m.active) { const g = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, 180); g.addColorStop(0, `${accent}22`); g.addColorStop(1, 'transparent'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+      for (let n of nodes) { n.x += n.vx; n.y += n.vy; if (n.x < 0 || n.x > W) n.vx *= -1; if (n.y < 0 || n.y > H) n.vy *= -1;
+        if (m.active) { const dx = n.x - m.x, dy = n.y - m.y, d2 = dx*dx + dy*dy; if (d2 < 140*140) { const d = Math.sqrt(d2) || 1; const force = (140 - d) / 140 * 0.6; n.x += (dx/d) * force; n.y += (dy/d) * force; } }
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(168,177,191,0.5)'; ctx.fill();
+      }
+      for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx*dx + dy*dy;
+        if (d2 < 120*120) { ctx.strokeStyle = `rgba(168,177,191,${(1 - Math.sqrt(d2)/120) * 0.18})`; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+        if (m.active) { const mx = (a.x+b.x)/2-m.x, my = (a.y+b.y)/2-m.y; if (mx*mx+my*my < 120*120 && d2 < 140*140) { ctx.strokeStyle = hexToRgba(accent, (1-Math.sqrt(mx*mx+my*my)/120)*0.35); ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    resize(); window.addEventListener('resize', resize); window.addEventListener('mousemove', onMove); window.addEventListener('mouseleave', onLeave); raf = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseleave', onLeave); };
+  }, [accent]);
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />;
+};
+
+/* ───── Terminal ───── */
+const TERMINAL_LINES = [
+  { p: '$ ', c: 'vertex deploy --model=gemini-2.5-flash --env=prod', t: 'cmd' },
+  { t: 'log', c: '↳ bootstrapping vertex-ai pipeline ...' },
+  { t: 'ok',  c: '  ✓ authenticated · cloud run services ready' },
+  { t: 'ok',  c: '  ✓ pushed 7 agents to agentic-data-assistant' },
+  { t: 'ok',  c: '  ✓ deployed extraction-pipeline (asia-se1, us-c1)' },
+  { t: 'dim', c: '  ↳ running validation suite  (84 cases)' },
+  { t: 'ok',  c: '  ✓ multi-pass extraction   3/3 passes clean' },
+  { t: 'ok',  c: '  ✓ coaching latency  p99 41ms  ← target 60ms' },
+  { t: 'ok',  c: '  ✓ compliance audit  6/6 agents  ← all pass' },
+  { p: '$ ', c: '_', t: 'cursor' },
+];
+
+const Terminal = () => {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (shown >= TERMINAL_LINES.length) return;
+    const delay = shown === 0 ? 600 : 260 + Math.random() * 180;
+    const t = setTimeout(() => setShown(s => s + 1), delay);
+    return () => clearTimeout(t);
+  }, [shown]);
+  const color = (t) => ({ cmd: '#e7ecf3', log: '#a8b1bf', ok: '#34d399', dim: '#6b7280', cursor: '#34d399' })[t] || '#a8b1bf';
+  return (
+    <div className="glass" style={{ borderRadius: 14, overflow: 'hidden', boxShadow: '0 40px 100px -30px rgba(0,0,0,0.6)', fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5, lineHeight: 1.9 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: '1px solid var(--line)', background: 'rgba(0,0,0,0.3)' }}>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f87171' }}/>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fbbf24' }}/>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#34d399' }}/>
+        <span style={{ marginLeft: 10, color: 'var(--fg-2)', fontSize: 11 }}>~/projects · zsh</span>
+        <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <StatusDot color="#34d399" size={5}/><span style={{ fontSize: 10.5, color: 'var(--fg-2)' }}>ready</span>
+        </span>
+      </div>
+      <div style={{ padding: '16px 18px', minHeight: 280 }}>
+        {TERMINAL_LINES.slice(0, shown).map((l, i) => (
+          <div key={i} style={{ color: color(l.t), animation: 'fadeUp 0.3s ease' }}>
+            {l.p && <span style={{ color: '#60a5fa' }}>{l.p}</span>}
+            <span>{l.c}</span>
+            {l.t === 'cursor' && <span style={{ animation: 'blink 1s steps(2) infinite' }}>▎</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ───── Hero ───── */
+const accent = '#10b981';
+
+const Hero = () => (
+  <section id="home" style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '140px 40px 80px', maxWidth: 1280, margin: '0 auto' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 56, alignItems: 'center', width: '100%', position: 'relative', zIndex: 1 }}>
+      <div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '6px 12px', borderRadius: 100, border: '1px solid var(--line-strong)', background: 'rgba(255,255,255,0.02)', marginBottom: 28 }}>
+          <StatusDot color={accent} size={5}/>
+          <span className="mono" style={{ fontSize: 11.5, color: 'var(--fg-1)' }}>Available · Senior AI engineering roles</span>
+        </div>
+        <h1 style={{ fontSize: 'clamp(44px, 5.6vw, 76px)', fontWeight: 700, letterSpacing: -2.2, lineHeight: 0.98, margin: '0 0 24px' }}>
+          Building<br/>
+          <span style={{ background: `linear-gradient(120deg, ${accent} 0%, #3b82f6 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>enterprise-scale</span><br/>
+          AI&nbsp;systems.
+        </h1>
+        <p style={{ color: 'var(--fg-1)', fontSize: 18, lineHeight: 1.55, maxWidth: 540, margin: '0 0 36px', fontWeight: 400 }}>
+          Applied AI Engineer focused on production-minded ML on GCP, low-latency
+          systems, and pragmatic delivery. I build things end-to-end — the kind
+          that would survive real traffic, not just notebooks.
+        </p>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 48 }}>
+          <a href="#work" className="mono" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+            color: '#0a0a0a', background: accent, textDecoration: 'none',
+            boxShadow: `0 0 0 1px ${accent}, 0 20px 40px -10px ${accent}66`, transition: 'transform .2s, box-shadow .2s',
+          }}>view selected work <Icon name="arrow" size={14}/></a>
+          <a href="#contact" className="mono" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 10, fontSize: 13, fontWeight: 500,
+            color: 'var(--fg-0)', background: 'transparent', border: '1px solid var(--line-strong)', textDecoration: 'none',
+          }}>get in touch <Icon name="arrowUpRight" size={14}/></a>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, borderTop: '1px solid var(--line)', paddingTop: 24, maxWidth: 520 }}>
+          {[{ k: '3+', v: 'years building ML' }, { k: '4', v: 'public repos' }, { k: 'GCP', v: 'primary platform' }].map(s => (
+            <div key={s.v}>
+              <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: -0.8, color: 'var(--fg-0)' }}>{s.k}</div>
+              <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 4 }}>{s.v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ position: 'relative', minHeight: 420 }}><Terminal /></div>
+    </div>
+    <div style={{ position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg-3)' }} className="mono">
+      <span style={{ fontSize: 10.5, letterSpacing: 1, textTransform: 'uppercase' }}>scroll</span>
+      <span style={{ width: 40, height: 1, background: 'var(--fg-3)' }}/>
+    </div>
+  </section>
+);
+
+/* ───── Shared Visual Header ───── */
+const VisualHeader = ({ kicker, value, unit, secondary }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '18px 20px 12px' }}>
+    <div>
+      <div className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: 1.2 }}>{kicker}</div>
+      <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: -0.8, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
+        {value}
+        {unit && <span style={{ fontSize: 12, color: 'var(--fg-2)', marginLeft: 4, fontFamily: "'JetBrains Mono', monospace" }}>{unit}</span>}
+      </div>
+    </div>
+    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <StatusDot color={accent} size={4}/>
+      <span className="mono" style={{ fontSize: 10, color: 'var(--fg-2)' }}>{secondary}</span>
+    </div>
+  </div>
+);
+
+/* ───── Project Visuals ───── */
+const AgentPipelineVisual = () => {
+  const nodes = [
+    { id: 'parse', x: 10, y: 50, label: 'Parse' },
+    { id: 'embed', x: 30, y: 25, label: 'Embed' },
+    { id: 'plan',  x: 50, y: 50, label: 'Plan' },
+    { id: 'exec',  x: 70, y: 25, label: 'Execute' },
+    { id: 'synth', x: 90, y: 50, label: 'Synth' },
+  ];
+  const edges = [['parse','embed'],['parse','plan'],['embed','plan'],['plan','exec'],['exec','synth']];
+  const get = (id) => nodes.find(n => n.id === id);
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <VisualHeader kicker="pipeline · 7 agents" value="5" unit="stages" secondary="rag" />
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', padding: '0 20px 16px' }}>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: '0 20px 16px 20px', width: 'calc(100% - 40px)', height: 'calc(100% - 16px)', display: 'block', overflow: 'visible' }}>
+          {edges.map(([a,b], i) => { const A = get(a), B = get(b); return (
+            <g key={`${a}-${b}`}>
+              <line x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke="rgba(255,255,255,0.1)" strokeWidth="0.3" vectorEffect="non-scaling-stroke"/>
+              <circle r="0.9" fill={accent}><animateMotion dur={`${2.2+i*0.4}s`} repeatCount="indefinite" path={`M ${A.x} ${A.y} L ${B.x} ${B.y}`}/></circle>
+            </g>
+          ); })}
+          {nodes.map(n => (<g key={n.id}><circle cx={n.x} cy={n.y} r="2.4" fill="#0b0f17" stroke="rgba(255,255,255,0.18)" strokeWidth="0.25" vectorEffect="non-scaling-stroke"/><circle cx={n.x} cy={n.y} r="1" fill={accent}/></g>))}
+        </svg>
+        <div style={{ position: 'absolute', inset: '0 20px 16px 20px', pointerEvents: 'none' }}>
+          {nodes.map(n => (<div key={n.id} className="mono" style={{ position: 'absolute', left: `calc(${n.x}% - 40px)`, top: `calc(${n.y}% + 8px)`, width: 80, textAlign: 'center', fontSize: 10, color: 'var(--fg-1)', letterSpacing: 0.3 }}>{n.label}</div>))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ExtractionVisual = () => {
+  const [data, setData] = useState(() => {
+    const arr = []; let v = 91;
+    for (let i = 0; i < 40; i++) { v += (Math.random() - 0.5) * 3; v = Math.max(84, Math.min(98, v)); arr.push(v); }
+    return arr;
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      setData(d => {
+        const last = d[d.length-1];
+        const jitter = (Math.random()-0.5)*2 + (Math.random()<0.03 ? 4 : 0);
+        let next = last + jitter; next += (91 - next) * 0.08; next = Math.max(82, Math.min(99, next));
+        return [...d.slice(1), next];
+      });
+    }, 600);
+    return () => clearInterval(id);
+  }, []);
+  const max = 100, min = 80;
+  const pts = data.map((v, i) => `${(i/(data.length-1))*100},${100 - ((v-min)/(max-min))*100}`).join(' ');
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <VisualHeader kicker="extraction accuracy" value={data[data.length-1].toFixed(1)} unit="%" secondary="streaming" />
+      <div style={{ flex: 1, minHeight: 0, padding: '0 0 12px', position: 'relative' }}>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}>
+          <defs><linearGradient id="extFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={accent} stopOpacity="0.3"/><stop offset="100%" stopColor={accent} stopOpacity="0"/></linearGradient></defs>
+          <polyline points={pts} fill="none" stroke={accent} strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+          <polygon points={`0,100 ${pts} 100,100`} fill="url(#extFill)"/>
+        </svg>
+      </div>
+    </div>
+  );
+};
+
+const CoachingVisual = () => {
+  const scores = [
+    { label: 'Cadence', value: 174, unit: 'spm', color: accent },
+    { label: 'Vertical', value: 228, unit: 'ms GCT', color: '#3b82f6' },
+    { label: 'Balance', value: 1.2, unit: '% dev', color: accent },
+  ];
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <VisualHeader kicker="context cache · gemini" value="3" unit="dims" secondary="24h ttl" />
+      <div style={{ flex: 1, padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {scores.map((s, i) => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: i === 0 ? 'none' : '1px solid var(--line)' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, boxShadow: `0 0 8px ${s.color}` }}/>
+            <span style={{ flex: 1, fontSize: 12.5, fontWeight: 500 }}>{s.label}</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--fg-2)' }}>{s.value} {s.unit}</span>
+          </div>
+        ))}
+        <div className="mono" style={{ fontSize: 9.5, color: 'var(--fg-3)', marginTop: 'auto', paddingTop: 8 }}>source: Heiderscheit 2011, Moore 2019</div>
+      </div>
+    </div>
+  );
+};
+
+const ComplianceVisual = () => {
+  const agents = ['OCR', 'Web Rules', 'Checklist', 'Specs', 'Competition', 'Insights'];
+  const [completed, setCompleted] = useState(0);
+  useEffect(() => {
+    if (completed >= agents.length) return;
+    const t = setTimeout(() => setCompleted(c => c + 1), 800 + Math.random() * 400);
+    return () => clearTimeout(t);
+  }, [completed]);
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <VisualHeader kicker="reasoning engine" value={`${completed}`} unit={`/ ${agents.length}`} secondary={completed >= agents.length ? 'done' : 'running'} />
+      <div style={{ flex: 1, padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {agents.map((a, i) => (
+          <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderTop: i === 0 ? 'none' : '1px solid var(--line)', opacity: i < completed ? 1 : 0.2, transition: 'opacity 0.3s' }}>
+            <span className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', width: 14 }}>{i+1}</span>
+            <div style={{ flex: 1, fontSize: 12, fontWeight: 500 }}>{a}</div>
+            {i < completed ? <span style={{ color: accent, fontSize: 11 }}>✓</span> : <span style={{ color: 'var(--fg-3)', fontSize: 10 }}>…</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ───── Project Card (v2: unified layout) ───── */
+const ProjectCard = ({ project }) => {
+  const [hover, setHover] = useState(false);
+  return (
+    <article onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} className="glass" style={{
+      borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+      transition: 'transform .35s cubic-bezier(.2,.8,.2,1), border-color .3s, box-shadow .3s',
+      transform: hover ? 'translateY(-3px)' : 'translateY(0)',
+      borderColor: hover ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
+      boxShadow: hover ? `0 40px 80px -30px rgba(0,0,0,0.6), 0 0 0 1px ${accent}22` : '0 20px 40px -20px rgba(0,0,0,0.5)',
+    }}>
+      <div style={{ height: 220, borderBottom: '1px solid var(--line)', background: 'linear-gradient(180deg, rgba(16,22,31,0.5), rgba(7,10,16,0.2))', overflow: 'hidden', position: 'relative' }}>{project.visual}</div>
+      <div style={{ padding: '20px 22px 22px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', letterSpacing: 1, textTransform: 'uppercase' }}>{project.tag}</span>
+          <span style={{ flex: 1 }}/>
+          <span className="mono" style={{ fontSize: 10, color: 'var(--fg-3)' }}>{project.year}</span>
+        </div>
+        <h3 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 8px', letterSpacing: -0.4, lineHeight: 1.2 }}>{project.title}</h3>
+        <p style={{ color: 'var(--fg-1)', fontSize: 13.5, lineHeight: 1.55, margin: '0 0 18px', flex: 1 }}>{project.desc}</p>
+        <div className="mono" style={{ display: 'flex', gap: 18, padding: '12px 0', borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums', flexWrap: 'wrap' }}>
+          {project.metrics.map(m => (
+            <div key={m.label} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+              <span style={{ color: 'var(--fg-3)' }}>{m.label}</span>
+              <span style={{ color: 'var(--fg-0)', fontWeight: 600 }}>{m.value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mono" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', padding: '12px 0 16px', borderTop: '1px solid var(--line)', fontSize: 10.5, color: 'var(--fg-2)' }}>
+          {project.stack.map((s, i) => (
+            <React.Fragment key={s}>
+              {i > 0 && <span style={{ color: 'var(--fg-3)' }}>·</span>}
+              <span>{s}</span>
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 16, marginTop: 'auto' }}>
+          <a href={project.repo} target="_blank" rel="noopener" className="mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: hover ? accent : 'var(--fg-0)', textDecoration: 'none', transition: 'color .2s', fontWeight: 500 }}>
+            <Icon name="github" size={12}/> source <Icon name="arrowUpRight" size={11}/>
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+};
+
+const ProofOfWork = () => {
+  const projects = [
+    { tag: 'multi-agent · rag', year: '2025', title: 'Agentic Data Assistant', desc: 'Multi-agent RAG chatbot answering natural-language questions over BigQuery. 7 specialized agents with vector-based schema matching and known-good query retrieval.', metrics: [{ label: 'agents', value: '7' }, { label: 'pipeline', value: '5-stage' }, { label: 'lang', value: 'py' }], stack: ['Python', 'Gemini', 'BigQuery', 'Flask', 'Vertex AI'], visual: <AgentPipelineVisual />, repo: 'https://github.com/dljx/agentic-data-assistant' },
+    { tag: 'pdf extraction · validation', year: '2025', title: 'Document Extraction Pipeline', desc: 'Event-driven PDF extraction with Gemini 2.5 Flash. Multi-pass validation, smart recovery, error codes, and automatic retry. Two Cloud Run microservices from Drive to BigQuery.', metrics: [{ label: 'passes', value: '3' }, { label: 'err codes', value: '3' }, { label: 'envs', value: '3' }], stack: ['Python', 'Cloud Run', 'Gemini', 'BigQuery', 'Drive API'], visual: <ExtractionVisual />, repo: 'https://github.com/dljx/document-extraction-pipeline' },
+    { tag: 'real-time · context caching', year: '2025', title: 'Realtime Coaching Engine', desc: 'Biomechanics scoring engine with configurable threshold models, Gemini context caching with research papers, user segmentation, and multi-language support across 3 microservices.', metrics: [{ label: 'services', value: '3' }, { label: 'dimensions', value: '3' }, { label: 'cache', value: '24h' }], stack: ['Python', 'Gemini', 'Cloud Run', 'Cloud Functions', 'Secret Manager'], visual: <CoachingVisual />, repo: 'https://github.com/dljx/realtime-coaching-engine' },
+    { tag: 'compliance · reasoning engine', year: '2025', title: 'Packaging Compliance AI', desc: '6-agent pipeline auditing product labels against regulatory checklists, specs, and competitive benchmarks. Deployable via Vertex AI Reasoning Engine or locally with Streamlit and CLI.', metrics: [{ label: 'agents', value: '6' }, { label: 'modes', value: '2' }, { label: 'schemas', value: 'pydantic' }], stack: ['Python', 'Gemini 2.5', 'Streamlit', 'Reasoning Engine', 'Pydantic'], visual: <ComplianceVisual />, repo: 'https://github.com/dljx/packaging-compliance-ai' },
+  ];
+  return (
+    <Section id="work" label="01 · selected work" title="Proof of work, not slides." eyebrow="four systems built end-to-end — all open-source on github." accent={accent} kicker="2025">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>{projects.map(p => <ProjectCard key={p.title} project={p} />)}</div>
+    </Section>
+  );
+};
+
+/* ───── Stack ───── */
+const STACK_GROUPS = [
+  { key: 'cloud', label: 'Compute / Cloud', icon: 'cloud', tools: [
+    { name: 'GCP', role: 'primary platform' }, { name: 'Cloud Run', role: 'containerised services' },
+    { name: 'Vertex AI', role: 'model serving + reasoning engine' }, { name: 'BigQuery', role: 'warehouse + vector search' },
+    { name: 'Cloud Functions', role: 'event pipelines' },
+  ]},
+  { key: 'lang', label: 'Languages / Frameworks', icon: 'code', tools: [
+    { name: 'Python', role: 'ml + services' }, { name: 'Gemini SDK', role: 'genai client' },
+    { name: 'Flask', role: 'web + api layer' }, { name: 'Streamlit', role: 'dashboards' },
+    { name: 'Pydantic', role: 'schema enforcement' },
+  ]},
+  { key: 'infra', label: 'Infrastructure', icon: 'stack', tools: [
+    { name: 'Cloud Storage', role: 'object store + triggers' }, { name: 'Secret Manager', role: 'credential vault' },
+    { name: 'Docker', role: 'containerisation' }, { name: 'Google Drive API', role: 'document ingestion' },
+    { name: 'Context Caching', role: 'vertex ai cached content' },
+  ]},
+];
+
+const StackItem = ({ tool }) => {
+  const [hover, setHover] = useState(false);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      padding: '14px 16px', borderRadius: 10, background: hover ? 'rgba(255,255,255,0.035)' : 'transparent',
+      border: '1px solid', borderColor: hover ? 'rgba(255,255,255,0.1)' : 'transparent', transition: 'all .2s',
+      display: 'flex', alignItems: 'center', gap: 12, cursor: 'default',
+    }}>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: hover ? accent : 'var(--fg-3)', transition: 'all .2s', boxShadow: hover ? `0 0 10px ${accent}` : 'none' }}/>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg-0)' }}>{tool.name}</div>
+        <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', marginTop: 2 }}>{tool.role}</div>
+      </div>
+    </div>
+  );
+};
+
+const Stack = () => (
+  <Section id="stack" label="02 · stack" title="The tools behind the work." accent={accent}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+      {STACK_GROUPS.map(g => (
+        <div key={g.key} className="glass" style={{ borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, paddingBottom: 18, borderBottom: '1px solid var(--line)' }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--line-strong)', color: accent }}><Icon name={g.icon} size={16}/></div>
+            <div><div style={{ fontSize: 15, fontWeight: 600 }}>{g.label}</div><div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 }}>{g.tools.length} tools</div></div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{g.tools.map(t => <StackItem key={t.name} tool={t}/>)}</div>
+        </div>
+      ))}
+    </div>
+    <div style={{ marginTop: 40, overflow: 'hidden', position: 'relative', maskImage: 'linear-gradient(to right, transparent, #000 10%, #000 90%, transparent)' }}>
+      <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>also regularly in play →</div>
+      <div style={{ display: 'flex', gap: 28, animation: 'marquee 40s linear infinite', width: 'max-content' }}>
+        {[...Array(2)].map((_, k) => (
+          <div key={k} style={{ display: 'flex', gap: 28 }}>
+            {['FastAPI','Gunicorn','PyPDF2','Jinja2','YAML','pandas','Document AI','Dialogflow CX','OAuth2','Sheets API','Text Embeddings','APScheduler','SQLite','functions-framework'].map(n => (
+              <span key={n} className="mono" style={{ fontSize: 13, color: 'var(--fg-2)', whiteSpace: 'nowrap' }}>{n}</span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  </Section>
+);
+
+/* ───── GitHub Activity ───── */
+const MiniSpark = ({ data, color, height = 32 }) => {
+  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+  const pts = data.map((v, i) => `${(i/(data.length-1))*100},${100 - ((v-min)/range)*100}`).join(' ');
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height, overflow: 'visible' }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+    </svg>
+  );
+};
+
+const StatCard = ({ stat }) => (
+  <div className="glass" style={{ padding: 18, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 140 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <Icon name={stat.icon} size={13}/>
+      <span className="mono" style={{ fontSize: 10, color: 'var(--fg-2)', textTransform: 'uppercase', letterSpacing: 1 }}>{stat.name}</span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+      <span style={{ fontSize: 26, fontWeight: 600, letterSpacing: -0.8, fontVariantNumeric: 'tabular-nums' }}>{stat.value}</span>
+      <span className="mono" style={{ fontSize: 11, color: 'var(--fg-2)' }}>{stat.unit}</span>
+    </div>
+    {stat.series && <div style={{ flex: 1, minHeight: 28 }}><MiniSpark data={stat.series} color={accent}/></div>}
+    <div className="mono" style={{ fontSize: 9.5, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: 1 }}>{stat.footer}</div>
+  </div>
+);
+
+const Heatmap = () => {
+  const weeks = 26;
+  const cells = useMemo(() => {
+    const arr = [];
+    for (let w = 0; w < weeks; w++) {
+      const week = [];
+      for (let d = 0; d < 7; d++) {
+        const base = (d === 0 || d === 6) ? 0.25 : 0.6;
+        const r = Math.random();
+        let v = 0;
+        if (r < base * 0.25) v = 0; else if (r < base * 0.5) v = 1; else if (r < base * 0.8) v = 2; else if (r < base * 0.95) v = 3; else v = 4;
+        week.push(v);
+      }
+      arr.push(week);
+    }
+    return arr;
+  }, []);
+  const color = (v) => v === 0 ? 'rgba(255,255,255,0.04)' : accent + Math.floor((0.2 + v * 0.2) * 255).toString(16).padStart(2, '0');
+  return (
+    <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
+      {cells.map((week, i) => (
+        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {week.map((v, j) => <span key={j} style={{ width: 10, height: 10, borderRadius: 2, background: color(v), border: '1px solid rgba(255,255,255,0.02)' }}/>)}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const RepoRow = ({ repo }) => (
+  <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 100px 80px 80px', alignItems: 'center', gap: 16, padding: '14px 18px', borderTop: '1px solid var(--line)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+      <Icon name="code" size={12}/>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{repo.name}</div>
+        <div className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{repo.desc}</div>
+      </div>
+    </div>
+    <div className="mono" style={{ fontSize: 11, color: 'var(--fg-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: repo.color }}/>
+      {repo.lang}
+    </div>
+    <div className="mono" style={{ fontSize: 11, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums' }}>{repo.files}f</div>
+    <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', textAlign: 'right' }}>{repo.updated}</div>
+  </div>
+);
+
+const LiveMetrics = () => {
+  const [commitSeries] = useState(Array.from({ length: 24 }, () => Math.round(Math.random() * 12)));
+  const stats = [
+    { name: 'Public repos', value: '4', unit: '', icon: 'code', footer: 'open-source on github', series: null },
+    { name: 'Commits · 90d', value: '340+', unit: '', icon: 'activity', footer: 'across all repos', series: commitSeries },
+    { name: 'Total agents', value: '20', unit: '', icon: 'zap', footer: 'across 4 systems', series: null },
+    { name: 'Languages', value: '5', unit: '', icon: 'stack', footer: 'py · sql · bash · yaml · hcl', series: null },
+  ];
+  const repos = [
+    { name: 'dljx/agentic-data-assistant',       desc: '7-agent rag chatbot over bigquery',               lang: 'Python', color: '#3572A5', files: 18, updated: 'today' },
+    { name: 'dljx/document-extraction-pipeline',  desc: 'event-driven pdf extraction · gemini 2.5 flash',  lang: 'Python', color: '#3572A5', files: 12, updated: 'today' },
+    { name: 'dljx/realtime-coaching-engine',      desc: 'biomechanics scoring · context caching',          lang: 'Python', color: '#3572A5', files: 14, updated: 'today' },
+    { name: 'dljx/packaging-compliance-ai',       desc: '6-agent label audit · reasoning engine',          lang: 'Python', color: '#3572A5', files: 30, updated: 'today' },
+  ];
+  return (
+    <Section id="metrics" label="03 · github activity" title="Where the work actually lives." eyebrow="all repos public — code speaks louder than slides." accent={accent}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
+        {stats.map(s => <StatCard key={s.name} stat={s}/>)}
+      </div>
+      <div className="glass" style={{ borderRadius: 16, padding: 20, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <Icon name="activity" size={14}/>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Contribution graph</div>
+          <span className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', marginLeft: 8 }}>last 26 weeks</span>
+          <span style={{ flex: 1 }}/>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            less
+            {[0,1,2,3,4].map(v => <span key={v} style={{ width: 10, height: 10, borderRadius: 2, background: v === 0 ? 'rgba(255,255,255,0.04)' : accent + Math.floor((0.2+v*0.2)*255).toString(16).padStart(2,'0') }}/>)}
+            more
+          </div>
+        </div>
+        <div style={{ overflowX: 'auto' }}><Heatmap /></div>
+      </div>
+      <div className="glass" style={{ borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', padding: '16px 18px', gap: 10 }}>
+          <Icon name="github" size={14}/>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Repositories</div>
+          <span className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', marginLeft: 8 }}>4 public</span>
+          <span style={{ flex: 1 }}/>
+          <a href="https://github.com/dljx" target="_blank" rel="noopener" className="mono" style={{ fontSize: 11, color: accent, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            view all on github <Icon name="arrowUpRight" size={11}/>
+          </a>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 100px 80px 80px', gap: 16, padding: '10px 18px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid var(--line)' }}>
+          {['repository', 'language', 'files', 'updated'].map(h => (
+            <div key={h} className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: 1, textAlign: h === 'updated' ? 'right' : 'left' }}>{h}</div>
+          ))}
+        </div>
+        {repos.map(r => <RepoRow key={r.name} repo={r}/>)}
+      </div>
+    </Section>
+  );
+};
+
+/* ───── Contact ───── */
+const GlowButton = ({ children, icon, primary = false, href = '#' }) => {
+  const [hover, setHover] = useState(false);
+  return (
+    <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 10,
+      padding: '14px 20px', borderRadius: 12,
+      background: primary ? accent : 'rgba(255,255,255,0.03)', color: primary ? '#0a0a0a' : 'var(--fg-0)',
+      border: '1px solid', borderColor: primary ? accent : 'var(--line-strong)',
+      textDecoration: 'none', fontSize: 13.5, fontWeight: 600, fontFamily: "'Inter', sans-serif",
+      boxShadow: hover ? (primary ? `0 0 0 1px ${accent}, 0 20px 50px -10px ${accent}99, 0 0 60px ${accent}55` : `0 0 0 1px ${accent}55, 0 0 40px ${accent}33`) : (primary ? `0 0 0 1px ${accent}, 0 10px 30px -10px ${accent}66` : 'none'),
+      transition: 'all .25s cubic-bezier(.2,.8,.2,1)', transform: hover ? 'translateY(-2px)' : 'translateY(0)',
+    }}>
+      {icon && <Icon name={icon} size={15}/>}{children}
+      {primary && <span style={{ position: 'absolute', inset: -2, borderRadius: 14, pointerEvents: 'none', background: `radial-gradient(200px 80px at 50% 120%, ${accent}55, transparent)`, opacity: hover ? 1 : 0, transition: 'opacity .3s' }}/>}
+    </a>
+  );
+};
+
+const Contact = () => (
+  <Section id="contact" label="04 · contact" title="" accent={accent}>
+    <div className="glass-strong" style={{ borderRadius: 24, padding: '56px 48px', position: 'relative', overflow: 'hidden' }}>
+      <div aria-hidden="true" style={{ position: 'absolute', inset: -80, background: `radial-gradient(600px 300px at 80% 0%, ${accent}22, transparent 60%)`, pointerEvents: 'none' }}/>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 48, alignItems: 'center', position: 'relative' }}>
+        <div>
+          <div className="mono" style={{ fontSize: 11, color: accent, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>— let's talk</div>
+          <h2 style={{ fontSize: 44, fontWeight: 600, letterSpacing: -1.4, lineHeight: 1.05, margin: '0 0 20px' }}>
+            Interested in<br/>collaborating on<br/><span style={{ color: accent }}>applied AI?</span>
+          </h2>
+          <p style={{ color: 'var(--fg-1)', fontSize: 16, lineHeight: 1.55, margin: 0, maxWidth: 480 }}>
+            Open to senior roles and interesting applied-ML work — greenfield
+            platforms, latency problems, and GCP architecture.
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <GlowButton icon="download" primary href="resume.pdf">
+            Download Résumé
+            <span style={{ marginLeft: 'auto', fontSize: 10.5, opacity: 0.7, fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 }}>PDF</span>
+          </GlowButton>
+          <GlowButton icon="mail" href="mailto:daryl.lee97@gmail.com">
+            daryl.lee97@gmail.com
+            <Icon name="arrowUpRight" size={13}/>
+          </GlowButton>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <GlowButton icon="github" href="https://github.com/dljx">GitHub</GlowButton>
+            <GlowButton icon="linkedin" href="https://www.linkedin.com/in/dljx/">LinkedIn</GlowButton>
+          </div>
+        </div>
+      </div>
+      <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-3)', letterSpacing: 0.5 }}>© 2026 · daryl · built with react · source on github</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }} className="mono">
+          <span style={{ fontSize: 10.5, color: accent, display: 'inline-flex', alignItems: 'center', gap: 6 }}><StatusDot color={accent} size={4}/> open to work</span>
+        </div>
+      </div>
+    </div>
+  </Section>
+);
+
+/* ───── Dock ───── */
+const Dock = () => {
+  const items = [
+    { icon: 'home', label: 'home', target: 'home' },
+    { icon: 'work', label: 'work', target: 'work' },
+    { icon: 'cpu', label: 'stack', target: 'stack' },
+    { icon: 'pulse', label: 'activity', target: 'metrics' },
+    { icon: 'mail', label: 'contact', target: 'contact' },
+  ];
+  const [active, setActive] = useState('home');
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    const update = () => setTime(new Date().toLocaleTimeString('en-GB', { hour12: false }));
+    update(); const t = setInterval(update, 1000);
+    const obs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); }); }, { rootMargin: '-40% 0px -55% 0px' });
+    items.forEach(i => { const el = document.getElementById(i.target); if (el) obs.observe(el); });
+    return () => { clearInterval(t); obs.disconnect(); };
+  }, []);
+
+  const scrollTo = (id) => { const el = document.getElementById(id); if (el) { window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 40, behavior: 'smooth' }); } };
+
+  return (
+    <nav style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, zIndex: 50, display: 'flex', alignItems: 'center', gap: 4, padding: '6px', borderRadius: 16 }} className="glass-strong">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px 6px 10px', borderRight: '1px solid var(--line)' }}>
+        <div style={{ width: 22, height: 22, borderRadius: 6, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#0a0a0a', letterSpacing: -0.5, boxShadow: `0 0 16px ${accent}66` }}>D</div>
+        <span className="mono" style={{ fontSize: 11.5, color: 'var(--fg-0)', fontWeight: 600 }}>daryl.</span>
+        <span className="mono" style={{ fontSize: 10, color: 'var(--fg-3)' }}>ai-eng</span>
+      </div>
+      {items.map(i => (
+        <button key={i.target} onClick={() => scrollTo(i.target)} style={{
+          position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '8px 12px', borderRadius: 10, background: 'transparent', border: 'none', cursor: 'pointer',
+          color: active === i.target ? 'var(--fg-0)' : 'var(--fg-1)', transition: 'color .2s',
+        }}>
+          {active === i.target && <span style={{ position: 'absolute', inset: 0, borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--line-strong)' }}/>}
+          <span style={{ position: 'relative', display: 'inline-flex' }}>
+            <Icon name={i.icon} size={15}/>
+            {active === i.target && <span style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: accent, boxShadow: `0 0 6px ${accent}` }}/>}
+          </span>
+          <span className="mono" style={{ position: 'relative', fontSize: 11.5, fontWeight: 500, letterSpacing: 0.3 }}>{i.label}</span>
+        </button>
+      ))}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderLeft: '1px solid var(--line)', marginLeft: 4 }}>
+        <StatusDot color={accent} size={5}/>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums' }}>{time} UTC</span>
+      </div>
+    </nav>
+  );
+};
+
+/* ───── App ───── */
+const App = () => (
+  <div style={{ position: 'relative', zIndex: 1 }}>
+    <Dock />
+    <div style={{ paddingBottom: 100 }}>
+      <Hero />
+      <ProofOfWork />
+      <Stack />
+      <LiveMetrics />
+      <Contact />
+    </div>
+  </div>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
