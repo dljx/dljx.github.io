@@ -815,8 +815,10 @@ const App = () => {
       .then(r => r.json())
       .then(data => {
         if (!Array.isArray(data)) return;
-        setRepoCount(data.length);
-        setGhRepos(data.map(r => ({
+        const EXCLUDE = ['dljx/dljx', 'dljx/dljx.github.io'];
+        const filtered = data.filter(r => !EXCLUDE.includes(r.full_name));
+        setRepoCount(filtered.length);
+        setGhRepos(filtered.map(r => ({
           name: r.full_name,
           desc: r.description || '—',
           lang: r.language || '—',
