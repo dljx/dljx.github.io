@@ -815,7 +815,7 @@ const App = () => {
       .then(r => r.json())
       .then(data => {
         if (!Array.isArray(data)) return;
-        const EXCLUDE = ['dljx/dljx', 'dljx/dljx.github.io'];
+        const EXCLUDE = ['dljx/dljx.github.io'];
         const filtered = data.filter(r => !EXCLUDE.includes(r.full_name));
         setRepoCount(filtered.length);
         setGhRepos(filtered.map(r => ({
