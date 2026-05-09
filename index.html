@@ -175,8 +175,20 @@ const TERMINAL_LINES = [
   { t: 'ok',  c: '  ✓ multi-pass extraction   3/3 passes clean' },
   { t: 'ok',  c: '  ✓ coaching latency  p99 41ms  ← target 60ms' },
   { t: 'ok',  c: '  ✓ compliance audit  6/6 agents  ← all pass' },
+  { t: 'ok',  c: '  ✓ sovereign-eye   deployed · cloudflare pages' },
   { p: '$ ', c: '_', t: 'cursor' },
 ];
+
+/* ── GitHub API helper ── */
+const LANG_COLOR = { Python: '#3572A5', JavaScript: '#f1e05a', HTML: '#e34c26', TypeScript: '#3178c6', CSS: '#563d7c' };
+const formatUpdated = (iso) => {
+  const diff = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  if (diff < 7) return `${diff}d ago`;
+  if (diff < 30) return `${Math.floor(diff / 7)}w ago`;
+  return new Date(iso).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+};
 
 const Terminal = () => {
   const [shown, setShown] = useState(0);
@@ -214,7 +226,7 @@ const Terminal = () => {
 /* ───── Hero ───── */
 const accent = '#10b981';
 
-const Hero = () => (
+const Hero = ({ repoCount }) => (
   <section id="home" style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '140px 40px 80px', maxWidth: 1280, margin: '0 auto' }}>
     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 56, alignItems: 'center', width: '100%', position: 'relative', zIndex: 1 }}>
       <div>
@@ -244,7 +256,7 @@ const Hero = () => (
           }}>get in touch <Icon name="arrowUpRight" size={14}/></a>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, borderTop: '1px solid var(--line)', paddingTop: 24, maxWidth: 520 }}>
-          {[{ k: '3+', v: 'years building ML' }, { k: '4', v: 'public repos' }, { k: 'GCP', v: 'primary platform' }].map(s => (
+          {[{ k: '3+', v: 'years building ML' }, { k: repoCount != null ? String(repoCount) : '…', v: 'public repos' }, { k: 'GCP', v: 'primary platform' }].map(s => (
             <div key={s.v}>
               <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: -0.8, color: 'var(--fg-0)' }}>{s.k}</div>
               <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 4 }}>{s.v}</div>
@@ -390,6 +402,48 @@ const ComplianceVisual = () => {
   );
 };
 
+const SovereignEyeVisual = () => {
+  const sectors = [
+    { label: 'Tech', pct: 62, color: '#60a5fa' },
+    { label: 'Consumer', pct: 12, color: '#fb923c' },
+    { label: 'Financials', pct: 10, color: '#34d399' },
+    { label: 'Industrials', pct: 9, color: '#a78bfa' },
+    { label: 'Comm.', pct: 7, color: '#fdba74' },
+  ];
+  const [sgd, setSgd] = useState(false);
+  const nlv = 128400;
+  const rate = 1.342;
+  const [spark] = useState(() => Array.from({ length: 20 }, (_, i) => 100 + i * 1.4 + (Math.random() - 0.3) * 4));
+  const min = Math.min(...spark), max = Math.max(...spark);
+  const pts = spark.map((v, i) => `${(i / (spark.length - 1)) * 100},${100 - ((v - min) / (max - min || 1)) * 100}`).join(' ');
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <VisualHeader
+        kicker="net liquidity · finnhub"
+        value={sgd ? `S$${((nlv * rate) / 1000).toFixed(0)}k` : `$${(nlv / 1000).toFixed(0)}k`}
+        unit={sgd ? 'SGD' : 'USD'}
+        secondary={<span onClick={() => setSgd(s => !s)} style={{ cursor: 'pointer', color: accent, fontSize: 10 }}>switch to {sgd ? 'USD' : 'SGD'}</span>}
+      />
+      <div style={{ flex: 1, padding: '0 20px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {sectors.map(s => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', width: 68 }}>{s.label}</span>
+            <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.05)' }}>
+              <div style={{ height: '100%', width: `${s.pct}%`, background: s.color, borderRadius: 3 }}/>
+            </div>
+            <span className="mono" style={{ fontSize: 10, color: 'var(--fg-2)', width: 28, textAlign: 'right' }}>{s.pct}%</span>
+          </div>
+        ))}
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: 36, marginTop: 4 }}>
+          <defs><linearGradient id="seFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={accent} stopOpacity="0.25"/><stop offset="100%" stopColor={accent} stopOpacity="0"/></linearGradient></defs>
+          <polyline points={pts} fill="none" stroke={accent} strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+          <polygon points={`0,100 ${pts} 100,100`} fill="url(#seFill)"/>
+        </svg>
+      </div>
+    </div>
+  );
+};
+
 /* ───── Project Card (v2: unified layout) ───── */
 const ProjectCard = ({ project }) => {
   const [hover, setHover] = useState(false);
@@ -442,9 +496,10 @@ const ProofOfWork = () => {
     { tag: 'pdf extraction · validation', year: '2025', title: 'Document Extraction Pipeline', desc: 'Event-driven PDF extraction with Gemini 2.5 Flash. Multi-pass validation, smart recovery, error codes, and automatic retry. Two Cloud Run microservices from Drive to BigQuery.', metrics: [{ label: 'passes', value: '3' }, { label: 'err codes', value: '3' }, { label: 'envs', value: '3' }], stack: ['Python', 'Cloud Run', 'Gemini', 'BigQuery', 'Drive API'], visual: <ExtractionVisual />, repo: 'https://github.com/dljx/document-extraction-pipeline' },
     { tag: 'real-time · context caching', year: '2025', title: 'Realtime Coaching Engine', desc: 'Biomechanics scoring engine with configurable threshold models, Gemini context caching with research papers, user segmentation, and multi-language support across 3 microservices.', metrics: [{ label: 'services', value: '3' }, { label: 'dimensions', value: '3' }, { label: 'cache', value: '24h' }], stack: ['Python', 'Gemini', 'Cloud Run', 'Cloud Functions', 'Secret Manager'], visual: <CoachingVisual />, repo: 'https://github.com/dljx/realtime-coaching-engine' },
     { tag: 'compliance · reasoning engine', year: '2025', title: 'Packaging Compliance AI', desc: '6-agent pipeline auditing product labels against regulatory checklists, specs, and competitive benchmarks. Deployable via Vertex AI Reasoning Engine or locally with Streamlit and CLI.', metrics: [{ label: 'agents', value: '6' }, { label: 'modes', value: '2' }, { label: 'schemas', value: 'pydantic' }], stack: ['Python', 'Gemini 2.5', 'Streamlit', 'Reasoning Engine', 'Pydantic'], visual: <ComplianceVisual />, repo: 'https://github.com/dljx/packaging-compliance-ai' },
+    { tag: 'portfolio dashboard · react', year: '2026', title: 'Sovereign Eye', desc: 'Self-hosted portfolio intelligence dashboard. Live Finnhub quotes, cross-broker inventory, holdings heatmap, SEC tracker, news wire, and a USD/SGD toggle — all in a single static file deployable to Cloudflare Pages.', metrics: [{ label: 'brokers', value: 'n' }, { label: 'data', value: 'finnhub' }, { label: 'deploy', value: 'cf pages' }], stack: ['React 18', 'Babel Standalone', 'Finnhub API', 'Cloudflare Pages', 'Frankfurter FX'], visual: <SovereignEyeVisual />, repo: 'https://github.com/dljx/sovereign-eye' },
   ];
   return (
-    <Section id="work" label="01 · selected work" title="Proof of work, not slides." eyebrow="four systems built end-to-end — all open-source on github." accent={accent} kicker="2025">
+    <Section id="work" label="01 · selected work" title="Proof of work, not slides." eyebrow="five projects built end-to-end — all open-source on github." accent={accent} kicker="2025–26">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>{projects.map(p => <ProjectCard key={p.title} project={p} />)}</div>
     </Section>
   );
@@ -570,7 +625,9 @@ const Heatmap = () => {
 };
 
 const RepoRow = ({ repo }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 100px 80px 80px', alignItems: 'center', gap: 16, padding: '14px 18px', borderTop: '1px solid var(--line)' }}>
+  <a href={repo.url} target="_blank" rel="noopener" style={{ textDecoration: 'none', color: 'inherit', display: 'grid', gridTemplateColumns: '1fr 100px 120px', alignItems: 'center', gap: 16, padding: '14px 18px', borderTop: '1px solid var(--line)', transition: 'background .15s' }}
+     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
       <Icon name="code" size={12}/>
       <div style={{ minWidth: 0 }}>
@@ -582,24 +639,18 @@ const RepoRow = ({ repo }) => (
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: repo.color }}/>
       {repo.lang}
     </div>
-    <div className="mono" style={{ fontSize: 11, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums' }}>{repo.files}f</div>
     <div className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', textAlign: 'right' }}>{repo.updated}</div>
-  </div>
+  </a>
 );
 
-const LiveMetrics = () => {
+const LiveMetrics = ({ repos, repoCount }) => {
   const [commitSeries] = useState(Array.from({ length: 24 }, () => Math.round(Math.random() * 12)));
+  const count = repoCount != null ? String(repoCount) : '…';
   const stats = [
-    { name: 'Public repos', value: '4', unit: '', icon: 'code', footer: 'open-source on github', series: null },
+    { name: 'Public repos', value: count, unit: '', icon: 'code', footer: 'open-source on github', series: null },
     { name: 'Commits · 90d', value: '340+', unit: '', icon: 'activity', footer: 'across all repos', series: commitSeries },
     { name: 'Total agents', value: '20', unit: '', icon: 'zap', footer: 'across 4 systems', series: null },
-    { name: 'Languages', value: '5', unit: '', icon: 'stack', footer: 'py · sql · bash · yaml · hcl', series: null },
-  ];
-  const repos = [
-    { name: 'dljx/agentic-data-assistant',       desc: '7-agent rag chatbot over bigquery',               lang: 'Python', color: '#3572A5', files: 18, updated: 'today' },
-    { name: 'dljx/document-extraction-pipeline',  desc: 'event-driven pdf extraction · gemini 2.5 flash',  lang: 'Python', color: '#3572A5', files: 12, updated: 'today' },
-    { name: 'dljx/realtime-coaching-engine',      desc: 'biomechanics scoring · context caching',          lang: 'Python', color: '#3572A5', files: 14, updated: 'today' },
-    { name: 'dljx/packaging-compliance-ai',       desc: '6-agent label audit · reasoning engine',          lang: 'Python', color: '#3572A5', files: 30, updated: 'today' },
+    { name: 'Languages', value: '5', unit: '', icon: 'stack', footer: 'py · js · sql · yaml · bash', series: null },
   ];
   return (
     <Section id="metrics" label="03 · github activity" title="Where the work actually lives." eyebrow="all repos public — code speaks louder than slides." accent={accent}>
@@ -624,18 +675,21 @@ const LiveMetrics = () => {
         <div style={{ display: 'flex', alignItems: 'center', padding: '16px 18px', gap: 10 }}>
           <Icon name="github" size={14}/>
           <div style={{ fontSize: 13, fontWeight: 600 }}>Repositories</div>
-          <span className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', marginLeft: 8 }}>4 public</span>
+          <span className="mono" style={{ fontSize: 10.5, color: 'var(--fg-2)', marginLeft: 8 }}>{count} public</span>
           <span style={{ flex: 1 }}/>
           <a href="https://github.com/dljx" target="_blank" rel="noopener" className="mono" style={{ fontSize: 11, color: accent, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             view all on github <Icon name="arrowUpRight" size={11}/>
           </a>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 100px 80px 80px', gap: 16, padding: '10px 18px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid var(--line)' }}>
-          {['repository', 'language', 'files', 'updated'].map(h => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px', gap: 16, padding: '10px 18px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid var(--line)' }}>
+          {['repository', 'language', 'updated'].map(h => (
             <div key={h} className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: 1, textAlign: h === 'updated' ? 'right' : 'left' }}>{h}</div>
           ))}
         </div>
-        {repos.map(r => <RepoRow key={r.name} repo={r}/>)}
+        {repos.length === 0
+          ? <div className="mono" style={{ padding: '20px 18px', color: 'var(--fg-3)', fontSize: 11 }}>loading repositories…</div>
+          : repos.map(r => <RepoRow key={r.name} repo={r}/>)
+        }
       </div>
     </Section>
   );
@@ -752,18 +806,41 @@ const Dock = () => {
 };
 
 /* ───── App ───── */
-const App = () => (
-  <div style={{ position: 'relative', zIndex: 1 }}>
-    <Dock />
-    <div style={{ paddingBottom: 100 }}>
-      <Hero />
-      <ProofOfWork />
-      <Stack />
-      <LiveMetrics />
-      <Contact />
+const App = () => {
+  const [ghRepos, setGhRepos] = useState([]);
+  const [repoCount, setRepoCount] = useState(null);
+
+  useEffect(() => {
+    fetch('https://api.github.com/users/dljx/repos?type=public&sort=updated&per_page=100')
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        setRepoCount(data.length);
+        setGhRepos(data.map(r => ({
+          name: r.full_name,
+          desc: r.description || '—',
+          lang: r.language || '—',
+          color: LANG_COLOR[r.language] || '#6b7280',
+          updated: formatUpdated(r.updated_at),
+          url: r.html_url,
+        })));
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div style={{ position: 'relative', zIndex: 1 }}>
+      <Dock />
+      <div style={{ paddingBottom: 100 }}>
+        <Hero repoCount={repoCount} />
+        <ProofOfWork />
+        <Stack />
+        <LiveMetrics repos={ghRepos} repoCount={repoCount} />
+        <Contact />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
   </script>
